@@ -204,9 +204,9 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
     var btn = document.getElementById('create-btn');
     if (!name || !password) { showStatus('Name and password are required.', false); return; }
     btn.disabled = true; btn.textContent = 'Creating…';
-    fetch('/api/admin-actions/create-buyer', {
+    fetch('/api/admin-actions', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ name: name, password: password, products: products })
+      body: JSON.stringify({ action: 'create', name: name, password: password, products: products })
     }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
       .then(function(res){
         btn.disabled = false; btn.textContent = 'Create buyer';
@@ -277,9 +277,9 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
       var container = document.getElementById('edit-checkboxes-'+index);
       var products = collectProducts(container);
       btn.disabled = true; btn.textContent = 'Saving…';
-      fetch('/api/admin-actions/update-products', {
+      fetch('/api/admin-actions', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: buyer.name, products: products })
+        body: JSON.stringify({ action: 'update-products', name: buyer.name, products: products })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
         .then(function(res){
           btn.disabled = false; btn.textContent = 'Save plan';
@@ -294,9 +294,9 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
       var newPassword = pwInput.value;
       if (!newPassword) { showStatus('Enter a new password first.', false); return; }
       btn.disabled = true; btn.textContent = 'Saving…';
-      fetch('/api/admin-actions/reset-password', {
+      fetch('/api/admin-actions', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: buyer.name, password: newPassword })
+        body: JSON.stringify({ action: 'reset-password', name: buyer.name, password: newPassword })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
         .then(function(res){
           btn.disabled = false; btn.textContent = 'Reset password';
@@ -309,9 +309,9 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
     if (action === 'delete') {
       if (!window.confirm('Delete buyer "'+buyer.name+'"? This revokes their access immediately once deployed.')) return;
       btn.disabled = true; btn.textContent = 'Deleting…';
-      fetch('/api/admin-actions/delete-buyer', {
+      fetch('/api/admin-actions', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: buyer.name })
+        body: JSON.stringify({ action: 'delete', name: buyer.name })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
         .then(function(res){
           if (res.data && res.data.ok) { renderTable(res.data.buyers); showStatus('Buyer "'+buyer.name+'" deleted.', true); }

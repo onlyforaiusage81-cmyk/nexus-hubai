@@ -6,16 +6,13 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/portal", "destination": "/api/portal" },
     { "source": "/tools/roadmap-creator", "destination": "/api/tools/roadmap-creator" },
-    { "source": "/tools/ramp-up-planner", "destination": "/api/tools/rampup-planner" },
+    { "source": "/tools/ramp-up-planner", "destination": "/api/tools/ramp-up-planner" },
     { "source": "/tools/ybr-studio", "destination": "/api/tools/ybr-studio" },
     { "source": "/tools/ai-quiz-portal", "destination": "/api/tools/ai-quiz-portal" },
     { "source": "/admin", "destination": "/api/admin" },
     { "source": "/admin-login", "destination": "/admin-login.html" }
   ],
   "functions": {
-    "api/tools/roadmap-creator.js": { "includeFiles": "api/_tools/roadmap-creator.html" },
-    "api/tools/rampup-planner.js": { "includeFiles": "api/_tools/rampup-planner.html" },
-    "api/tools/ybr-studio.js": { "includeFiles": "api/_tools/ybr-studio.html" },
-    "api/tools/ai-quiz-portal.js": { "includeFiles": "api/_tools/ai-quiz-portal.html" }
+    "api/tools/[slug].js": { "includeFiles": "api/_tools/**" }
   }
 }

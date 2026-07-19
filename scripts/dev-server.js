@@ -119,28 +119,17 @@ const server = http.createServer(async (req, res) => {
       const handler = require('../api/admin-logout.js');
       return handler(req, res);
     }
-    const ADMIN_WRITE_ROUTES = {
-      '/api/admin-actions/create-buyer': '../api/admin-actions/create-buyer.js',
-      '/api/admin-actions/update-products': '../api/admin-actions/update-products.js',
-      '/api/admin-actions/reset-password': '../api/admin-actions/reset-password.js',
-      '/api/admin-actions/delete-buyer': '../api/admin-actions/delete-buyer.js',
-    };
-    if (ADMIN_WRITE_ROUTES[pathname]) {
+    if (pathname === '/api/admin-actions') {
       req.body = await readBody(req);
-      delete require.cache[require.resolve(ADMIN_WRITE_ROUTES[pathname])];
-      const handler = require(ADMIN_WRITE_ROUTES[pathname]);
+      delete require.cache[require.resolve('../api/admin-actions.js')];
+      const handler = require('../api/admin-actions.js');
       return handler(req, res);
     }
-    const TOOL_ROUTES = {
-      '/tools/roadmap-creator': '../api/tools/roadmap-creator.js',
-      '/tools/ramp-up-planner': '../api/tools/rampup-planner.js',
-      '/tools/ybr-studio': '../api/tools/ybr-studio.js',
-      '/tools/ai-quiz-portal': '../api/tools/ai-quiz-portal.js',
-    };
-    if (TOOL_ROUTES[pathname]) {
-      delete require.cache[require.resolve(TOOL_ROUTES[pathname])];
+    if (pathname.startsWith('/tools/')) {
+      req.query = { slug: pathname.slice('/tools/'.length) };
+      delete require.cache[require.resolve('../api/tools/[slug].js')];
       delete require.cache[require.resolve('../api/_lib/auth.js')];
-      const handler = require(TOOL_ROUTES[pathname]);
+      const handler = require('../api/tools/[slug].js');
       return handler(req, res);
     }
 
