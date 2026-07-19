@@ -13,13 +13,6 @@
     ]
   },
   {
-    "name": "Admin Panel Test",
-    "passwordHash": "$2a$10$YVgZ1iT/jgKY0UIbN8qMTOXgshGd1W5Cp17zqzXtGnnE5g5Sgefgy",
-    "products": [
-      "ybr-studio"
-    ]
-  },
-  {
     "name": "Digitide",
     "passwordHash": "$2a$10$6fpjDWxOvA.z8qcrfbAAReEouHDg22Sv01jalWe6/ijGPlfdiGWCi",
     "products": [
