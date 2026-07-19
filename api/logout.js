@@ -1,4 +1,4 @@
-const { buildClearCookie } = require('../lib/auth');
+const { buildClearCookie } = require('./_lib/auth');
 
 module.exports = function handler(req, res) {
   res.setHeader('Set-Cookie', buildClearCookie());

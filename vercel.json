@@ -4,9 +4,6 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/login", "destination": "/login.html" },
-    { "source": "/portal", "destination": "/api/portal" },
-    { "source": "/data/:path*", "destination": "/api/_blocked" },
-    { "source": "/lib/:path*", "destination": "/api/_blocked" },
-    { "source": "/scripts/:path*", "destination": "/api/_blocked" }
+    { "source": "/portal", "destination": "/api/portal" }
   ]
 }

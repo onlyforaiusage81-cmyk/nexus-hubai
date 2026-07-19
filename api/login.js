@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
-const { findBuyer } = require('../lib/buyers');
-const { createSessionToken, buildSessionCookie } = require('../lib/auth');
+const { findBuyer } = require('./_lib/buyers');
+const { createSessionToken, buildSessionCookie } = require('./_lib/auth');
 
 // Fixed dummy hash so an unknown name takes about as long as a wrong
 // password, instead of returning early and leaking which names exist.

@@ -1,4 +1,4 @@
-const { getSessionFromRequest } = require('../lib/auth');
+const { getSessionFromRequest } = require('./_lib/auth');
 
 function escapeHtml(str) {
   return String(str)

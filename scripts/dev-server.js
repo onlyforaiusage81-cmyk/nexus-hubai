@@ -86,7 +86,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/portal') {
       delete require.cache[require.resolve('../api/portal.js')];
-      delete require.cache[require.resolve('../lib/auth.js')];
+      delete require.cache[require.resolve('../api/_lib/auth.js')];
       const handler = require('../api/portal.js');
       return handler(req, res);
     }
@@ -95,6 +95,14 @@ const server = http.createServer(async (req, res) => {
       const content = fs.readFileSync(filePath);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(content);
+    }
+
+    // Real Vercel deployments never serve /api/** as static files (that whole
+    // tree is reserved for Serverless Functions) — match that here so local
+    // testing doesn't give a false sense of security.
+    if (pathname === '/api' || pathname.startsWith('/api/')) {
+      res.writeHead(404);
+      return res.end('Not found');
     }
 
     // static file serving

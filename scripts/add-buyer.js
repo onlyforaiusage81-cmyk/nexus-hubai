@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Adds (or updates) a buyer in data/buyers.json with a bcrypt-hashed password.
+// Adds (or updates) a buyer in api/_data/buyers.json with a bcrypt-hashed password.
 // Usage:
 //   node scripts/add-buyer.js                  (interactive prompts, password hidden)
 //   node scripts/add-buyer.js "Name" "password" (non-interactive, for scripting)
@@ -9,7 +9,7 @@ const path = require('path');
 const readline = require('readline');
 const bcrypt = require('bcryptjs');
 
-const BUYERS_PATH = path.join(__dirname, '..', 'data', 'buyers.json');
+const BUYERS_PATH = path.join(__dirname, '..', 'api', '_data', 'buyers.json');
 
 function loadBuyers() {
   try {
