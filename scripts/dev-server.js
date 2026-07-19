@@ -120,10 +120,10 @@ const server = http.createServer(async (req, res) => {
       return handler(req, res);
     }
     const ADMIN_WRITE_ROUTES = {
-      '/api/admin/create-buyer': '../api/admin/create-buyer.js',
-      '/api/admin/update-products': '../api/admin/update-products.js',
-      '/api/admin/reset-password': '../api/admin/reset-password.js',
-      '/api/admin/delete-buyer': '../api/admin/delete-buyer.js',
+      '/api/admin-actions/create-buyer': '../api/admin-actions/create-buyer.js',
+      '/api/admin-actions/update-products': '../api/admin-actions/update-products.js',
+      '/api/admin-actions/reset-password': '../api/admin-actions/reset-password.js',
+      '/api/admin-actions/delete-buyer': '../api/admin-actions/delete-buyer.js',
     };
     if (ADMIN_WRITE_ROUTES[pathname]) {
       req.body = await readBody(req);

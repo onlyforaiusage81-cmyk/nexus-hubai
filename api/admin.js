@@ -204,7 +204,7 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
     var btn = document.getElementById('create-btn');
     if (!name || !password) { showStatus('Name and password are required.', false); return; }
     btn.disabled = true; btn.textContent = 'Creating…';
-    fetch('/api/admin/create-buyer', {
+    fetch('/api/admin-actions/create-buyer', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ name: name, password: password, products: products })
     }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
@@ -277,7 +277,7 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
       var container = document.getElementById('edit-checkboxes-'+index);
       var products = collectProducts(container);
       btn.disabled = true; btn.textContent = 'Saving…';
-      fetch('/api/admin/update-products', {
+      fetch('/api/admin-actions/update-products', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name: buyer.name, products: products })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
@@ -294,7 +294,7 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
       var newPassword = pwInput.value;
       if (!newPassword) { showStatus('Enter a new password first.', false); return; }
       btn.disabled = true; btn.textContent = 'Saving…';
-      fetch('/api/admin/reset-password', {
+      fetch('/api/admin-actions/reset-password', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name: buyer.name, password: newPassword })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
@@ -309,7 +309,7 @@ window.__BUYERS__ = ${toJsonForScript(buyers)};
     if (action === 'delete') {
       if (!window.confirm('Delete buyer "'+buyer.name+'"? This revokes their access immediately once deployed.')) return;
       btn.disabled = true; btn.textContent = 'Deleting…';
-      fetch('/api/admin/delete-buyer', {
+      fetch('/api/admin-actions/delete-buyer', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name: buyer.name })
       }).then(function(r){ return r.json().then(function(data){ return {status:r.status, data:data}; }); })
