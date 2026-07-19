@@ -10,5 +10,12 @@
     "products": [
       "ybr-studio"
     ]
+  },
+  {
+    "name": "Admin Panel Test",
+    "passwordHash": "$2a$10$YVgZ1iT/jgKY0UIbN8qMTOXgshGd1W5Cp17zqzXtGnnE5g5Sgefgy",
+    "products": [
+      "ybr-studio"
+    ]
   }
 ]
