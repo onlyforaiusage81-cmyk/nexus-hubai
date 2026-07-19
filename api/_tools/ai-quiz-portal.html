@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Offer Brief → Agent Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  :root{
+    --ink:#0a0d14;
+    --ink-2:#10141f;
+    --panel:#141a27;
+    --panel-2:#1b2230;
+    --line:#283142;
+    --text:#e7ecf5;
+    --muted:#8b97ac;
+    --gold:#f0b429;
+    --gold-soft:#f7d076;
+    --green:#43d6a0;
+    --red:#ff6b6b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--text);
+    background:var(--ink);
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(240,180,41,.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(67,214,160,.06), transparent 55%),
+      linear-gradient(transparent 0 31px, rgba(255,255,255,.018) 31px 32px),
+      linear-gradient(90deg, transparent 0 31px, rgba(255,255,255,.018) 31px 32px);
+    background-size:auto,auto,32px 32px,32px 32px;
+    min-height:100vh;
+    padding:48px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:680px;margin:0 auto}
+
+  .topline{
+    display:flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:22px;
+    opacity:0;animation:rise .6s .05s forwards;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+
+  h1{
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+    font-size:clamp(32px,6vw,50px);line-height:1.02;letter-spacing:-.02em;
+    margin:0 0 12px;opacity:0;animation:rise .6s .12s forwards;
+  }
+  h1 em{font-style:normal;color:var(--gold)}
+  .sub{
+    color:var(--muted);font-size:15.5px;max-width:52ch;line-height:1.55;margin:0 0 34px;
+    opacity:0;animation:rise .6s .2s forwards;
+  }
+
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--ink-2));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px;box-shadow:0 30px 60px -30px rgba(0,0,0,.8);
+    opacity:0;animation:rise .6s .28s forwards;
+  }
+
+  label{display:block;font-size:12.5px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .field{margin-bottom:20px}
+  input[type=text],input[type=url],input[type=number]{
+    width:100%;padding:13px 14px;background:var(--ink);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;font-size:14.5px;
+    font-family:'IBM Plex Mono',monospace;transition:border-color .15s,box-shadow .15s;
+  }
+  input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(240,180,41,.14)}
+  .row{display:flex;gap:16px}
+  .row .field{flex:1}
+  .hint{font-size:12px;color:var(--muted);margin-top:7px;font-family:'IBM Plex Mono',monospace}
+
+  .drop{
+    border:1.5px dashed var(--line);border-radius:12px;padding:30px 20px;text-align:center;
+    cursor:pointer;transition:.18s;background:rgba(255,255,255,.012);
+  }
+  .drop:hover{border-color:var(--gold);background:rgba(240,180,41,.05)}
+  .drop.drag{border-color:var(--gold);background:rgba(240,180,41,.09);transform:translateY(-1px)}
+  .drop.has{border-style:solid;border-color:var(--green);background:rgba(67,214,160,.06)}
+  .drop .big{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;margin:4px 0}
+  .drop .small{font-size:12.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+  .filechip{color:var(--green);font-weight:600;word-break:break-all}
+
+  button.go{
+    width:100%;margin-top:8px;padding:15px;border:none;border-radius:11px;cursor:pointer;
+    background:linear-gradient(180deg,var(--gold-soft),var(--gold));color:#241a02;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;letter-spacing:.01em;
+    transition:.15s;box-shadow:0 12px 24px -10px rgba(240,180,41,.6);
+  }
+  button.go:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.04)}
+  button.go:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+
+  .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(36,26,2,.35);
+    border-top-color:#241a02;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .log{margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    color:var(--muted);min-height:18px;line-height:1.7;white-space:pre-wrap}
+  .log .ok{color:var(--green)} .log .err{color:var(--red)} .log .gold{color:var(--gold-soft)}
+
+  .result{margin-top:20px;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:none}
+  .result.show{display:block;animation:rise .4s forwards}
+  .result .head{padding:14px 18px;background:rgba(67,214,160,.08);border-bottom:1px solid var(--line);
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px}
+  .result .body{padding:18px;display:flex;flex-direction:column;gap:10px}
+  .rbtn{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 15px;border-radius:10px;text-decoration:none;border:1px solid var(--line);
+    background:var(--ink);color:var(--text);font-size:14px;transition:.15s;font-weight:500}
+  .rbtn:hover{border-color:var(--gold);background:rgba(240,180,41,.06)}
+  .rbtn .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+
+  .footnote{margin-top:26px;font-size:12px;color:var(--muted);line-height:1.65;
+    font-family:'IBM Plex Mono',monospace;opacity:0;animation:rise .6s .4s forwards}
+
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span class="dot"></span> BPO Training Ops · Offer Update Pipeline</div>
+  <h1>Turn an offer brief into an <em>agent quiz</em>.</h1>
+  <p class="sub">Drop in the latest bank-offer Word document. It’s read on this page, sent to your n8n workflow, and returned as a graded 15-question Google Form ready for your agents.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="hook">n8n Production Webhook URL</label>
+      <input id="hook" type="url" placeholder="https://your-name.app.n8n.cloud/webhook/generate-quiz" />
+      <div class="hint">Paste the <b>Production URL</b> from the Webhook node. Saved in this browser.</div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="title">Form title <span style="text-transform:none;font-weight:400">(optional)</span></label>
+        <input id="title" type="text" placeholder="e.g. May Credit-Card Offers Check" />
+      </div>
+      <div class="field" style="max-width:150px">
+        <label for="num">Questions</label>
+        <input id="num" type="number" min="1" max="50" value="15" />
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:8px">
+      <label>Offer document (.docx)</label>
+      <div class="drop" id="drop">
+        <div class="big" id="dropBig">Drop the Word file here</div>
+        <div class="small" id="dropSmall">or click to browse · .docx only</div>
+      </div>
+      <input id="file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+    </div>
+
+    <button class="go" id="go" disabled>Generate quiz</button>
+    <div class="log" id="log"></div>
+
+    <div class="result" id="result">
+      <div class="head">✓ Quiz form created</div>
+      <div class="body">
+        <a class="rbtn" id="editLink" href="#" target="_blank" rel="noopener">
+          <span>Review &amp; manage the form</span><span class="tag">edit ↗</span>
+        </a>
+        <a class="rbtn" id="agentLink" href="#" target="_blank" rel="noopener">
+          <span>Open the agent quiz link</span><span class="tag">respond ↗</span>
+        </a>
+        <button class="rbtn" id="copyLink" style="cursor:pointer;font-family:inherit">
+          <span>Copy agent link to clipboard</span><span class="tag" id="copyTag">copy</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Tip: link responses to a sheet in one click — open the form, <b>Responses → Link to Sheets</b>.<br>
+    The form is created as a graded quiz; agents see their score after submitting.
+  </p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const hook=$('hook'), title=$('title'), num=$('num'), fileInput=$('file'),
+        drop=$('drop'), dropBig=$('dropBig'), dropSmall=$('dropSmall'),
+        go=$('go'), log=$('log'), result=$('result'),
+        editLink=$('editLink'), agentLink=$('agentLink'), copyLink=$('copyLink'), copyTag=$('copyTag');
+
+  let docText = '', fileName = '';
+
+  // Restore saved webhook URL (degrades gracefully if storage is blocked)
+  try { const s = localStorage.getItem('n8n_hook'); if (s) hook.value = s; } catch(e){}
+  hook.addEventListener('input', ()=>{ try{ localStorage.setItem('n8n_hook', hook.value.trim()); }catch(e){} refresh(); });
+
+  function say(msg, cls){ log.innerHTML = cls ? '<span class="'+cls+'">'+msg+'</span>' : msg; }
+  function refresh(){ go.disabled = !(hook.value.trim() && docText); }
+
+  // ---- file handling ----
+  function pickFile(){ fileInput.click(); }
+  drop.addEventListener('click', pickFile);
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+  drop.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+  fileInput.addEventListener('change', e=>{ const f=e.target.files[0]; if(f) handleFile(f); });
+
+  async function handleFile(f){
+    result.classList.remove('show');
+    if(!f.name.toLowerCase().endsWith('.docx')){ say('That isn’t a .docx file. Please upload a Word document.', 'err'); return; }
+    if(typeof mammoth === 'undefined'){ say('Text reader failed to load (check your connection).', 'err'); return; }
+    fileName = f.name; docText='';
+    say('Reading '+f.name+' …');
+    try{
+      const buf = await f.arrayBuffer();
+      const out = await mammoth.extractRawText({arrayBuffer: buf});
+      docText = (out.value||'').trim();
+      if(docText.length < 40){ say('That document looks almost empty — only '+docText.length+' characters of text found.', 'err'); refresh(); return; }
+      drop.classList.add('has');
+      dropBig.innerHTML = '<span class="filechip">'+f.name+'</span>';
+      dropSmall.textContent = Math.round(docText.length/5)+' words read · click to replace';
+      say('<span class="ok">✓ '+docText.length.toLocaleString()+' characters extracted.</span> Ready to generate.');
+    }catch(err){ say('Could not read that file: '+err.message, 'err'); }
+    refresh();
+  }
+
+  // ---- generate ----
+  go.addEventListener('click', async ()=>{
+    const url = hook.value.trim();
+    if(!url || !docText) return;
+    const n = Math.max(1, Math.min(50, parseInt(num.value)||15));
+    go.disabled = true; result.classList.remove('show');
+    go.innerHTML = '<span class="spinner"></span>Generating… this can take ~30–60s';
+    say('Sending brief to the workflow · Gemini is writing '+n+' questions…', 'gold');
+
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text: docText, formTitle: title.value.trim(), numQuestions: n })
+      });
+      const raw = await res.text();
+      if(!res.ok) throw new Error('Workflow returned HTTP '+res.status+(raw?(' · '+raw.slice(0,200)):''));
+      let data; try{ data = JSON.parse(raw); }catch(e){ throw new Error('Unexpected response: '+raw.slice(0,200)); }
+      if(!data.editUrl && !data.responderUrl) throw new Error('No form links came back. '+raw.slice(0,200));
+
+      editLink.href = data.editUrl || '#';
+      agentLink.href = data.responderUrl || '#';
+      copyLink.dataset.url = data.responderUrl || data.editUrl || '';
+      result.classList.add('show');
+      say('<span class="ok">✓ Created a '+(data.questions||n)+'-question graded form.</span>');
+    }catch(err){
+      let m = err.message||String(err);
+      if(/Failed to fetch/i.test(m)) m = 'Could not reach the workflow. Check the webhook URL, that the workflow is Active, and that CORS (allowedOrigins) is set on the Webhook node.';
+      say('✗ '+m, 'err');
+    }finally{
+      go.disabled=false; go.textContent='Generate quiz'; refresh();
+    }
+  });
+
+  copyLink.addEventListener('click', async ()=>{
+    const u = copyLink.dataset.url; if(!u) return;
+    try{ await navigator.clipboard.writeText(u); copyTag.textContent='copied ✓'; setTimeout(()=>copyTag.textContent='copy',1800);}catch(e){ copyTag.textContent='press ⌘C'; }
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

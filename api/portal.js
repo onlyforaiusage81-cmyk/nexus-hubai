@@ -28,6 +28,18 @@ const TOOLS = [
     href: '/tools/ramp-up-planner',
     live: true,
   },
+  {
+    name: 'YBR Studio',
+    desc: 'Generates presentation-ready decks from your inputs, styled to brand.',
+    href: '/tools/ybr-studio',
+    live: true,
+  },
+  {
+    name: 'AI Quiz Portal',
+    desc: 'Turns bank offer data into a ready-to-publish quiz workflow.',
+    href: '/tools/ai-quiz-portal',
+    live: true,
+  },
 ];
 
 function renderToolCard(tool) {

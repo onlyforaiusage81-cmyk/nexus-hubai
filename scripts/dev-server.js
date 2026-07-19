@@ -96,16 +96,16 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(content);
     }
-    if (pathname === '/tools/roadmap-creator') {
-      delete require.cache[require.resolve('../api/tools/roadmap-creator.js')];
+    const TOOL_ROUTES = {
+      '/tools/roadmap-creator': '../api/tools/roadmap-creator.js',
+      '/tools/ramp-up-planner': '../api/tools/rampup-planner.js',
+      '/tools/ybr-studio': '../api/tools/ybr-studio.js',
+      '/tools/ai-quiz-portal': '../api/tools/ai-quiz-portal.js',
+    };
+    if (TOOL_ROUTES[pathname]) {
+      delete require.cache[require.resolve(TOOL_ROUTES[pathname])];
       delete require.cache[require.resolve('../api/_lib/auth.js')];
-      const handler = require('../api/tools/roadmap-creator.js');
-      return handler(req, res);
-    }
-    if (pathname === '/tools/ramp-up-planner') {
-      delete require.cache[require.resolve('../api/tools/rampup-planner.js')];
-      delete require.cache[require.resolve('../api/_lib/auth.js')];
-      const handler = require('../api/tools/rampup-planner.js');
+      const handler = require(TOOL_ROUTES[pathname]);
       return handler(req, res);
     }
 
