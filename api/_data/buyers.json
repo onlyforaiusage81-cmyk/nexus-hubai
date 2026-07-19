@@ -18,14 +18,5 @@
     "products": [
       "ybr-studio"
     ]
-  },
-  {
-    "name": "Digitide Solutions",
-    "passwordHash": "$2a$10$MAyDqUHsfmAiNotetkUdNOj2/w9qVqdYDlvNpHssN7u9bq1vIUo92",
-    "products": [
-      "dsat-scrubber",
-      "roadmap-creator",
-      "ramp-up-planner"
-    ]
   }
 ]
