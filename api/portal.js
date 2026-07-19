@@ -1,4 +1,6 @@
 const { getSessionFromRequest } = require('./_lib/auth');
+const { findBuyer } = require('./_lib/buyers');
+const { hasAccess } = require('./_lib/entitlements');
 
 function escapeHtml(str) {
   return String(str)
@@ -11,39 +13,52 @@ function escapeHtml(str) {
 
 const TOOLS = [
   {
+    slug: 'dsat-scrubber',
     name: 'DSAT Scrubber',
     desc: 'Cleans and structures raw DSAT survey exports into ready-to-review data.',
     href: 'https://dsat-scrubber.vercel.app/',
-    live: true,
+    built: true,
   },
   {
+    slug: 'roadmap-creator',
     name: 'Roadmap Creator',
     desc: 'Turns operational inputs into a ranked, presentation-ready roadmap.',
     href: '/tools/roadmap-creator',
-    live: true,
+    built: true,
   },
   {
+    slug: 'ramp-up-planner',
     name: 'Ramp-up Planner',
     desc: 'Builds a structured ramp plan for new hires from your training inputs.',
     href: '/tools/ramp-up-planner',
-    live: true,
+    built: true,
   },
   {
+    slug: 'ybr-studio',
     name: 'YBR Studio',
     desc: 'Generates presentation-ready decks from your inputs, styled to brand.',
     href: '/tools/ybr-studio',
-    live: true,
+    built: true,
   },
   {
+    slug: 'ai-quiz-portal',
     name: 'AI Quiz Portal',
     desc: 'Turns bank offer data into a ready-to-publish quiz workflow.',
     href: '/tools/ai-quiz-portal',
-    live: true,
+    built: true,
   },
 ];
 
-function renderToolCard(tool) {
-  if (tool.live) {
+function renderToolCard(tool, buyer) {
+  if (!tool.built) {
+    return `<div class="tool-card is-disabled">
+      <span class="tool-status soon">Coming soon</span>
+      <h3>${escapeHtml(tool.name)}</h3>
+      <p>${escapeHtml(tool.desc)}</p>
+    </div>`;
+  }
+
+  if (hasAccess(buyer, tool.slug)) {
     return `<a class="tool-card" href="${escapeHtml(tool.href)}" target="_blank" rel="noopener">
       <span class="tool-status live">Live</span>
       <h3>${escapeHtml(tool.name)}</h3>
@@ -51,15 +66,17 @@ function renderToolCard(tool) {
       <span class="tool-cta">Open tool &rarr;</span>
     </a>`;
   }
-  return `<div class="tool-card is-disabled">
-    <span class="tool-status soon">Coming soon</span>
+
+  return `<div class="tool-card is-locked">
+    <span class="tool-status locked">&#128274; Not on your plan</span>
     <h3>${escapeHtml(tool.name)}</h3>
     <p>${escapeHtml(tool.desc)}</p>
+    <a class="tool-cta" href="/contact.html">Ask about the Bundle &rarr;</a>
   </div>`;
 }
 
-function renderPortalHtml(buyerName) {
-  const cards = TOOLS.map(renderToolCard).join('');
+function renderPortalHtml(buyerName, buyer) {
+  const cards = TOOLS.map((tool) => renderToolCard(tool, buyer)).join('');
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal — Nexus Hub</title><meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,12 +115,15 @@ h1{font-family:var(--disp);font-size:clamp(28px,4vw,40px);font-weight:640;letter
 .tool-card{background:var(--canvas-elevated);padding:var(--md);display:flex;flex-direction:column;gap:10px;transition:background .2s;position:relative}
 a.tool-card:hover{background:#1a1b20}
 .tool-card.is-disabled{opacity:.55}
+.tool-card.is-locked{opacity:.75}
 .tool-status{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--hairline);display:inline-block;width:fit-content}
 .tool-status.live{color:#22c58b;border-color:rgba(34,197,139,.4)}
 .tool-status.soon{color:var(--muted)}
+.tool-status.locked{color:#e0a72e;border-color:rgba(224,167,46,.4)}
 .tool-card h3{font-family:var(--disp);font-size:18px;font-weight:640;color:var(--ink);font-variation-settings:'wdth' 106}
 .tool-card p{font-size:13px;line-height:1.6;color:var(--body);flex:1}
-.tool-cta{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary-hot)}
+.tool-cta{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary-hot);width:fit-content}
+.is-locked .tool-cta{color:#e0a72e}
 
 @media(max-width:860px){.tool-grid{grid-template-columns:1fr}}
 
@@ -118,7 +138,7 @@ a.tool-card:hover{background:#1a1b20}
 <div class="wrap band">
   <span class="eyebrow">Buyer portal</span>
   <h1>Welcome, ${escapeHtml(buyerName)}</h1>
-  <p class="lead">Your tools are below. Live tools open in a new tab; the rest are on the way.</p>
+  <p class="lead">Your tools are below. Live tools open in a new tab; locked ones aren't on your current plan.</p>
   <div class="tool-grid">${cards}</div>
 </div>
 
@@ -134,7 +154,16 @@ module.exports = function handler(req, res) {
     return;
   }
 
+  // Buyer may have been removed from buyers.json since this session was
+  // issued (e.g. offboarded) -- treat that as no longer authenticated.
+  const buyer = findBuyer(session.name);
+  if (!buyer) {
+    res.writeHead(302, { Location: '/login' });
+    res.end();
+    return;
+  }
+
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).send(renderPortalHtml(session.name));
+  res.status(200).send(renderPortalHtml(session.name, buyer));
 };

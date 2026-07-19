@@ -1,14 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { getSessionFromRequest } = require('../_lib/auth');
+const { requireToolAccess } = require('../_lib/guard');
 
 module.exports = function handler(req, res) {
-  const session = getSessionFromRequest(req);
-  if (!session) {
-    res.writeHead(302, { Location: '/login' });
-    res.end();
-    return;
-  }
+  if (!requireToolAccess(req, res, 'ramp-up-planner')) return;
 
   const filePath = path.join(__dirname, '..', '_tools', 'rampup-planner.html');
   const html = fs.readFileSync(filePath, 'utf8');
