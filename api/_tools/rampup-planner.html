@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Training Ramp Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- ExcelJS builds the styled workbook entirely in the browser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  --ink:#0F172A; --ink-2:#1E293B; --slate:#334155; --muted:#64748B; --line:#E2E8F0; --line-2:#EEF2F6;
+  --paper:#F6F8FB; --card:#FFFFFF; --field:#FFFFFF;
+  --blue:#2563EB; --blue-soft:#EFF4FF; --blue-line:#BFD3FF;
+  --train:#60A5FA; --ojt:#34D399; --go:#F59E0B;
+  --green:#0F9D58; --red:#DC2626;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+  color:var(--ink); background:var(--paper);
+  min-height:100vh; display:flex;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Bricolage Grotesque",sans-serif; letter-spacing:-.02em; margin:0;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  width:300px; flex-shrink:0; background:var(--card); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{padding:26px 24px 20px;}
+.brand .mark{display:flex; align-items:center; gap:10px;}
+.brand .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--ink),var(--blue));display:grid;place-items:center;color:#fff;font-weight:800;font-family:"Bricolage Grotesque";font-size:15px;}
+.brand h1{font-size:18px; font-weight:800;}
+.brand p{margin:10px 0 0; color:var(--muted); font-size:12.5px; line-height:1.5;}
+
+.kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 24px 22px;}
+.kpi{background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:11px 12px;}
+.kpi .v{font-family:"Bricolage Grotesque"; font-size:22px; font-weight:800; color:var(--ink); line-height:1;}
+.kpi .l{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-top:5px; font-weight:600;}
+
+.nav{padding:6px 16px 16px;}
+.nav .h{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700; padding:0 8px 8px;}
+.step{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; cursor:pointer;
+  border:1px solid transparent; transition:.15s; color:var(--slate); font-weight:600; font-size:13.5px; margin-bottom:3px;
+}
+.step:hover{background:var(--paper);}
+.step.active{background:var(--blue-soft); border-color:var(--blue-line); color:var(--blue);}
+.step .num{width:22px;height:22px;border-radius:7px;background:var(--line); color:var(--slate); display:grid;place-items:center; font-size:11px; font-weight:800; flex-shrink:0;}
+.step.active .num{background:var(--blue); color:#fff;}
+
+.side-foot{margin-top:auto; padding:18px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:11.5px; line-height:1.5;}
+.side-foot b{color:var(--slate);}
+
+/* ---------- Main ---------- */
+.main{flex-grow:1; display:flex; flex-direction:column; min-width:0;}
+.topbar{padding:34px 44px 8px;}
+.eyebrow{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--blue); background:var(--blue-soft); border:1px solid var(--blue-line); padding:4px 10px; border-radius:999px;}
+.topbar h2{font-size:30px; font-weight:800; margin:14px 0 6px;}
+.topbar p{margin:0; color:var(--muted); font-size:14px; max-width:680px; line-height:1.55;}
+
+.content{flex-grow:1; padding:22px 44px 130px; overflow:visible;}
+
+.panel{display:none; animation:fade .25s ease;}
+.panel.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-bottom:20px;}
+.card-head{padding:18px 22px; border-bottom:1px solid var(--line-2); display:flex; justify-content:space-between; align-items:center; gap:14px;}
+.card-head h3{font-size:16.5px; font-weight:700;}
+.card-head p{margin:3px 0 0; color:var(--muted); font-size:12.5px;}
+.card-body{padding:22px;}
+
+.hint{display:flex; gap:10px; align-items:flex-start; background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; border-radius:10px; padding:11px 14px; font-size:12.5px; margin-bottom:18px; line-height:1.45;}
+.hint svg{flex-shrink:0; margin-top:1px;}
+
+.grid{display:grid; gap:16px;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g2{grid-template-columns:repeat(2,1fr);}
+.field{display:flex; flex-direction:column; gap:6px;}
+label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);}
+input,select{
+  height:40px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--field);
+  font-family:inherit; font-size:14px; color:var(--ink); outline:none; transition:.15s; width:100%;
+}
+input:focus,select:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft);}
+input::placeholder{color:#94A3B8;}
+
+.checks{display:flex; gap:22px; flex-wrap:wrap; margin:16px 0 4px;}
+.chk{display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; color:var(--slate); cursor:pointer;}
+.chk input{width:17px; height:17px; accent-color:var(--blue); cursor:pointer;}
+
+/* Buttons */
+.btn{border:0; cursor:pointer; height:40px; padding:0 18px; border-radius:10px; font-family:inherit; font-size:13.5px; font-weight:700; display:inline-flex; align-items:center; gap:8px; justify-content:center; transition:.15s;}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--blue); color:#fff; box-shadow:0 4px 14px rgba(37,99,235,.25);}
+.btn-primary:hover{background:#1D4ED8;}
+.btn-primary:disabled{opacity:.6; cursor:not-allowed; box-shadow:none;}
+.btn-ghost{background:var(--card); color:var(--slate); border:1px solid var(--line);}
+.btn-ghost:hover{background:var(--paper);}
+.btn-danger{background:#FEF2F2; color:var(--red); border:1px solid #FECACA; height:32px; padding:0 12px; font-size:12px; border-radius:8px;}
+.btn-danger:hover{background:#FEE2E2;}
+.btn-sm{height:34px; padding:0 13px; font-size:12.5px;}
+
+/* Site blocks */
+.site{border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:18px; background:#FCFDFF;}
+.site-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:13px; border-bottom:1px solid var(--line-2);}
+.site-head h4{font-size:15px; color:var(--blue);}
+.site-head p{margin:3px 0 0; color:var(--muted); font-size:12px;}
+
+/* Tables */
+table{width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--card);}
+thead th{text-align:left; padding:11px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; background:var(--paper); border-bottom:1px solid var(--line); color:var(--muted); font-weight:700;}
+tbody td{padding:8px 12px; border-bottom:1px solid var(--line-2); vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+td input,td select{height:36px;}
+.sub-label{font-size:12px; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:.04em;}
+
+/* Generate panel */
+.review{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
+.rstat{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px;}
+.rstat .v{font-family:"Bricolage Grotesque"; font-size:26px; font-weight:800;}
+.rstat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600; margin-top:4px;}
+.legend{display:flex; gap:18px; flex-wrap:wrap; margin:4px 0 18px; font-size:12.5px; color:var(--slate); font-weight:600;}
+.legend span{display:inline-flex; align-items:center; gap:7px;}
+.swatch{width:14px;height:14px;border-radius:4px; display:inline-block;}
+
+.result{display:none; align-items:center; gap:14px; padding:16px 18px; border-radius:12px; border:1px solid var(--line); background:var(--paper); margin-top:18px;}
+.result .ico{width:38px;height:38px;border-radius:10px; display:grid;place-items:center; flex-shrink:0;}
+.result .msg strong{display:block; font-size:14px;}
+.result .msg span{font-size:12.5px; color:var(--muted);}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;}
+@keyframes rot{to{transform:rotate(360deg);}}
+
+.preview-tbl-wrap{max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:10px; margin-top:18px;}
+.preview-tbl-wrap table{border:none; border-radius:0;}
+.preview-tbl-wrap thead th{position:sticky; top:0; z-index:2;}
+.preview-tbl-wrap td{font-size:12.5px; white-space:nowrap;}
+
+/* Footer action bar — part of flow, fixed at viewport bottom of main */
+.actionbar{
+  position:fixed; bottom:18px; right:30px; left:330px; z-index:40;
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:14px 22px; background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
+  border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 32px rgba(15,23,42,.12);
+}
+.actionbar .t strong{display:block; font-size:13.5px;}
+.actionbar .t span{font-size:12px; color:var(--muted);}
+.actionbar .acts{display:flex; gap:10px;}
+
+@media(max-width:1024px){
+  body{flex-direction:column;}
+  .sidebar{width:100%; height:auto; position:static; flex-direction:column; border-right:none; border-bottom:1px solid var(--line);}
+  .side-foot{display:none;}
+  .topbar,.content{padding-left:22px; padding-right:22px;}
+  .content{padding-bottom:140px;}
+  .actionbar{left:16px; right:16px;}
+  .g4{grid-template-columns:repeat(2,1fr);} .review{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark"><div class="dot">R</div><h1>Ramp Planner</h1></div>
+    <p>Turn site capacity and intake dates into a batch-by-batch training schedule — and a clean executive Gantt.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kpiSites">0</div><div class="l">Locations</div></div>
+    <div class="kpi"><div class="v" id="kpiRooms">0</div><div class="l">Rooms</div></div>
+    <div class="kpi"><div class="v" id="kpiIntakes">0</div><div class="l">Intakes</div></div>
+    <div class="kpi"><div class="v" id="kpiHolidays">0</div><div class="l">Holidays</div></div>
+  </div>
+
+  <nav class="nav">
+    <div class="h">Setup</div>
+    <div class="step active" data-target="globalRules"><span class="num">1</span> Global rules</div>
+    <div class="step" data-target="siteSetup"><span class="num">2</span> Site capacity</div>
+    <div class="step" data-target="recruitmentPlan"><span class="num">3</span> Intake dates</div>
+    <div class="step" data-target="holidayCalendar"><span class="num">4</span> Holidays</div>
+    <div class="step" data-target="generate"><span class="num">5</span> Review &amp; generate</div>
+  </nav>
+
+  <div class="side-foot">
+    Runs fully in your browser — <b>no server, no login, no n8n</b>. The Excel Gantt is built locally and downloads instantly.
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <span class="eyebrow">Training Operations</span>
+    <h2 id="pageTitle">Set the global rules</h2>
+    <p id="pageDesc">These apply to every location. The schedule is built backwards from your training durations and onboarding dates.</p>
+  </div>
+
+  <div class="content">
+
+    <!-- 1. GLOBAL -->
+    <section class="panel active" id="globalRules">
+      <div class="card">
+        <div class="card-head"><div><h3>Global operating logic</h3><p>Standard parameters applied across all locations.</p></div></div>
+        <div class="card-body">
+          <div class="hint">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#92400E" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>
+            <div>Durations are in <b>working days</b>. Sundays and any holidays you add are automatically skipped when building the timeline.</div>
+          </div>
+          <div class="grid g4">
+            <div class="field"><label>Operation / Client</label><input type="text" id="processName" placeholder="e.g. Myntra"/></div>
+            <div class="field"><label>Planning cycle</label><input type="text" id="planningMonth" placeholder="e.g. June 2026"/></div>
+            <div class="field"><label>Est. throughput %</label><input type="number" id="throughputPct" value="85" min="1" max="100"/></div>
+            <div class="field"><label>Work week</label><select id="workingModel"><option selected>6 Days (Mon–Sat)</option><option>5 Days (Mon–Fri)</option></select></div>
+          </div>
+          <div class="grid g4" style="margin-top:16px;">
+            <div class="field"><label>NHT / classroom days</label><input type="number" id="classroomDays" value="15"/></div>
+            <div class="field"><label>Mock / certification days</label><input type="number" id="mockDays" value="1"/></div>
+            <div class="field"><label>OJT support days</label><input type="number" id="ojtDays" value="10"/></div>
+            <div class="field"><label>Result / go-live buffer</label><input type="number" id="resultDays" value="1"/></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. SITES -->
+    <section class="panel" id="siteSetup">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Site capacity &amp; shift logic</h3><p>Trainers, rooms and shift rules per physical location.</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addSite()">+ Add location</button>
+        </div>
+        <div class="card-body" id="siteContainer"></div>
+      </div>
+    </section>
+
+    <!-- 3. INTAKES -->
+    <section class="panel" id="recruitmentPlan">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Recruitment intakes</h3><p>Confirmed batch drop dates. The earliest per location anchors the schedule.</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addRow('recruitmentBody', recruitmentRow())">+ Add intake</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Location</th><th>Onboarding date</th><th>Headcount</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="recruitmentBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. HOLIDAYS -->
+    <section class="panel" id="holidayCalendar">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Holidays</h3><p>Days the timeline should pause, per location.</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addRow('holidayBody', holidayRow())">+ Add holiday</button>
+        </div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Location</th><th>Date</th><th>Event name</th><th></th></tr></thead>
+            <tbody id="holidayBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. GENERATE -->
+    <section class="panel" id="generate">
+      <div class="card">
+        <div class="card-head"><div><h3>Review &amp; generate</h3><p>Build the batch plan and download the executive Gantt workbook.</p></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="refreshReview()">Refresh preview</button>
+        </div>
+        <div class="card-body">
+          <div class="review" id="reviewStats"></div>
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--train)"></i> Training (NHT)</span>
+            <span><i class="swatch" style="background:var(--ojt)"></i> OJT</span>
+            <span><i class="swatch" style="background:var(--go)"></i> Go-live ◆</span>
+          </div>
+
+          <button class="btn btn-primary" id="genBtn" type="button" onclick="generate()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Generate Gantt workbook
+          </button>
+
+          <div class="result" id="result">
+            <div class="ico" id="resultIco"></div>
+            <div class="msg"><strong id="resultTitle"></strong><span id="resultSub"></span></div>
+          </div>
+
+          <div class="preview-tbl-wrap" id="previewWrap" style="display:none;">
+            <table id="previewTbl"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="actionbar">
+    <div class="t"><strong>Ready to build</strong><span id="barSub">Configure your sites, then generate the workbook.</span></div>
+    <div class="acts">
+      <button class="btn btn-ghost" type="button" onclick="goStep('generate')">Review</button>
+      <button class="btn btn-primary" type="button" onclick="goStep('generate'); generate();">Generate now</button>
+    </div>
+  </div>
+</main>
+
+<template id="siteTemplate">
+  <div class="site">
+    <div class="site-head">
+      <div><h4>Location</h4><p>Define capacity and shift rules.</p></div>
+      <button class="btn btn-danger" type="button" onclick="this.closest('.site').remove(); refreshKPIs(); syncLocations();">Remove</button>
+    </div>
+    <div class="grid g4">
+      <div class="field"><label>Location name</label><input type="text" class="site-name" placeholder="e.g. Pune" oninput="syncLocations()"/></div>
+      <div class="field"><label>Final target HC</label><input type="number" class="ramp-target" placeholder="100"/></div>
+      <div class="field"><label>Active trainers</label><input type="number" class="trainers" placeholder="2"/></div>
+      <div class="field"><label>Total rooms</label><input type="number" class="room-count" placeholder="2"/></div>
+    </div>
+    <div class="checks">
+      <label class="chk"><input type="checkbox" class="both-shifts"/> Enable dual-shift utilisation</label>
+      <label class="chk"><input type="checkbox" class="sme-enabled" onchange="toggleSme(this)"/> Enable SME OJT overlay (frees trainer after certification)</label>
+    </div>
+    <div class="grid g4">
+      <div class="field"><label>SME ratio</label><select class="sme-ratio" disabled><option value="">Select</option><option>5:1</option><option>10:1</option></select></div>
+      <div class="field"><label>Default shift mode</label><select class="shift-mode"><option>Morning Only</option><option>Both Shifts</option><option>Evening Only</option></select></div>
+      <div class="field"><label>First onboarding date</label><input type="date" class="first-onboard"/></div>
+      <div class="field"><label>Notes</label><input type="text" class="site-notes" placeholder="Optional"/></div>
+    </div>
+    <div style="margin-top:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:9px;">
+        <span class="sub-label">Room matrix</span>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="addRoomRow(this)">+ Add room</button>
+      </div>
+      <table>
+        <thead><tr><th>Room name</th><th>Capacity</th><th>Shift allocation</th><th></th></tr></thead>
+        <tbody class="room-body"></tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script>
+const PALETTE_NOTE = "executive";
+
+/* ---------------- Navigation ---------------- */
+const STEP_META = {
+  globalRules:["Set the global rules","These apply to every location. The schedule is built from your training durations and onboarding dates."],
+  siteSetup:["Configure each site","Trainers and rooms decide how many batches run in parallel at each location."],
+  recruitmentPlan:["Map your intake dates","The earliest confirmed onboarding date per location anchors that site's timeline."],
+  holidayCalendar:["Add holidays","Any date here pauses the timeline for that location (Sundays are always skipped)."],
+  generate:["Review & generate","Build the batch plan and download your executive Gantt workbook."]
+};
+function goStep(id){
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active', s.dataset.target===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id===id));
+  document.getElementById('pageTitle').textContent = STEP_META[id][0];
+  document.getElementById('pageDesc').textContent = STEP_META[id][1];
+  if(id==='generate') refreshReview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.step').forEach(s=>s.addEventListener('click',()=>goStep(s.dataset.target)));
+
+/* ---------------- Dynamic rows ---------------- */
+const siteContainer = document.getElementById('siteContainer');
+
+function roomRow(){
+  return `<tr>
+    <td><input type="text" placeholder="e.g. Room A"></td>
+    <td><input type="number" placeholder="20"></td>
+    <td><select><option>Morning Only</option><option>Both Shifts</option><option>Evening Only</option></select></td>
+    <td style="width:70px;"><button class="btn btn-danger" type="button" onclick="this.closest('tr').remove(); refreshKPIs();">Drop</button></td>
+  </tr>`;
+}
+function recruitmentRow(){
+  return `<tr>
+    <td>${locationSelect()}</td>
+    <td><input type="date"></td>
+    <td><input type="number" placeholder="HC"></td>
+    <td><input type="text" placeholder="Note"></td>
+    <td style="width:70px;"><button class="btn btn-danger" type="button" onclick="this.closest('tr').remove(); refreshKPIs();">Drop</button></td>
+  </tr>`;
+}
+function holidayRow(){
+  return `<tr>
+    <td>${locationSelect()}</td>
+    <td><input type="date"></td>
+    <td><input type="text" placeholder="Holiday name"></td>
+    <td style="width:70px;"><button class="btn btn-danger" type="button" onclick="this.closest('tr').remove(); refreshKPIs();">Drop</button></td>
+  </tr>`;
+}
+function locationSelect(){
+  const opts = getLocations().map(x=>`<option>${x}</option>`).join('');
+  return `<select class="loc-select"><option value="">Select</option>${opts}</select>`;
+}
+function getLocations(){ return [...document.querySelectorAll('.site-name')].map(x=>x.value.trim()).filter(Boolean); }
+function syncLocations(){
+  const opts = `<option value="">Select</option>` + getLocations().map(x=>`<option>${x}</option>`).join('');
+  document.querySelectorAll('.loc-select').forEach(sel=>{
+    const cur = sel.value; sel.innerHTML = opts;
+    if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+  });
+  refreshKPIs();
+}
+function addSite(){
+  siteContainer.appendChild(document.getElementById('siteTemplate').content.cloneNode(true));
+  const b = siteContainer.lastElementChild;
+  b.querySelector('.room-body').insertAdjacentHTML('beforeend', roomRow());
+  refreshKPIs(); return b;
+}
+function addRoomRow(btn){ btn.closest('.site').querySelector('.room-body').insertAdjacentHTML('beforeend', roomRow()); refreshKPIs(); }
+function addRow(bodyId, html){ document.getElementById(bodyId).insertAdjacentHTML('beforeend', html); refreshKPIs(); syncLocations(); }
+function toggleSme(cb){ const s=cb.closest('.site').querySelector('.sme-ratio'); s.disabled=!cb.checked; if(!cb.checked) s.value=''; }
+
+function refreshKPIs(){
+  document.getElementById('kpiSites').textContent = document.querySelectorAll('.site').length;
+  document.getElementById('kpiRooms').textContent = document.querySelectorAll('.room-body tr').length;
+  document.getElementById('kpiIntakes').textContent = document.querySelectorAll('#recruitmentBody tr').length;
+  document.getElementById('kpiHolidays').textContent = document.querySelectorAll('#holidayBody tr').length;
+}
+
+/* ---------------- Build payload ---------------- */
+function buildPayload(){
+  return {
+    global:{
+      process_name:val('processName'), planning_month:val('planningMonth'),
+      throughput_percent:val('throughputPct'), working_model:val('workingModel'),
+      classroom_days:val('classroomDays'), mock_days:val('mockDays'),
+      ojt_days:val('ojtDays'), result_days:val('resultDays')
+    },
+    sites:[...document.querySelectorAll('.site')].map(b=>({
+      location:b.querySelector('.site-name').value.trim(),
+      ramp_target:b.querySelector('.ramp-target').value,
+      trainers_available:b.querySelector('.trainers').value,
+      use_both_shifts:b.querySelector('.both-shifts').checked,
+      sme_enabled:b.querySelector('.sme-enabled').checked,
+      sme_ratio:b.querySelector('.sme-ratio').value,
+      default_shift_mode:b.querySelector('.shift-mode').value,
+      first_onboarding_date:b.querySelector('.first-onboard').value,
+      notes:b.querySelector('.site-notes').value,
+      rooms:[...b.querySelectorAll('.room-body tr')].map(tr=>({
+        room_name:tr.children[0].querySelector('input').value.trim(),
+        capacity:tr.children[1].querySelector('input').value,
+        shift_usage:tr.children[2].querySelector('select').value
+      }))
+    })),
+    recruitment:[...document.querySelectorAll('#recruitmentBody tr')].map(tr=>({
+      location:tr.children[0].querySelector('select').value,
+      onboarding_date:tr.children[1].querySelector('input').value,
+      agents_available:tr.children[2].querySelector('input').value,
+      notes:tr.children[3].querySelector('input').value
+    })),
+    holidays:[...document.querySelectorAll('#holidayBody tr')].map(tr=>({
+      location:tr.children[0].querySelector('select').value,
+      holiday_date:tr.children[1].querySelector('input').value,
+      holiday_name:tr.children[2].querySelector('input').value
+    }))
+  };
+}
+const val = id => document.getElementById(id).value;
+
+/* ================= PLANNER ENGINE (in-browser, working-day math) ================= */
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d));}
+function fmtDate(dt){return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;}
+function isSunday(dt){return dt.getUTCDay()===0;}
+function holidaySetFor(loc,hol){return new Set((hol||[]).filter(h=>h.location===loc&&h.holiday_date).map(h=>h.holiday_date));}
+function isWorkingDay(dt,hs){return !isSunday(dt) && !hs.has(fmtDate(dt));}
+function addWorkingDays(start,days,hs){const d=new Date(start.getTime());let c=0;while(c<days){d.setUTCDate(d.getUTCDate()+1);if(isWorkingDay(d,hs))c++;}return d;}
+function nextAllowedStart(date,hs){const d=new Date(date.getTime());while(!isWorkingDay(d,hs))d.setUTCDate(d.getUTCDate()+1);return d;}
+function firstRecruitmentDate(loc,siteDate,rec){
+  const e=(rec||[]).filter(r=>r.location===loc&&r.onboarding_date).sort((a,b)=>a.onboarding_date.localeCompare(b.onboarding_date));
+  return e.length? e[0].onboarding_date : (siteDate||null);
+}
+function runPlanner(payload){
+  const g=payload.global;
+  const throughput=Number(g.throughput_percent||85)/100;
+  const classroomDays=Number(g.classroom_days||15);
+  const mockDays=Number(g.mock_days||1);
+  const ojtDays=Number(g.ojt_days||10);
+  const resultDays=Number(g.result_days||1);
+  const rows=[];
+  for(const site of payload.sites){
+    const location=site.location; if(!location) continue;
+    const hs=holidaySetFor(location,payload.holidays);
+    const smeEnabled = site.sme_enabled===true || site.sme_enabled==='true';
+    const rooms=(site.rooms||[]).filter(r=>r.room_name && Number(r.capacity||0)>0);
+    const lanes=[];
+    for(const room of rooms){
+      const usage=room.shift_usage || site.default_shift_mode || (site.use_both_shifts?'Both Shifts':'Morning Only');
+      if(usage==='Both Shifts'){lanes.push({room_name:room.room_name,shift:'Morning',capacity:+room.capacity});lanes.push({room_name:room.room_name,shift:'Evening',capacity:+room.capacity});}
+      else if(usage==='Evening Only'){lanes.push({room_name:room.room_name,shift:'Evening',capacity:+room.capacity});}
+      else{lanes.push({room_name:room.room_name,shift:'Morning',capacity:+room.capacity});}
+    }
+    const trainerCount=Number(site.trainers_available||0);
+    const usable=lanes.slice(0,trainerCount);
+    const firstStr=firstRecruitmentDate(location,site.first_onboarding_date,payload.recruitment);
+    if(!firstStr || usable.length===0) continue;
+    let planned=0, n=0;
+    const required=Math.ceil(Number(site.ramp_target||0)/throughput);
+    const anchor=nextAllowedStart(parseDate(firstStr),hs);
+    const avail=usable.map(()=>new Date(anchor.getTime()));
+    while(planned<required && usable.length>0){
+      for(let i=0;i<usable.length;i++){
+        if(planned>=required) break;
+        const lane=usable[i];
+        const startDate=nextAllowedStart(avail[i],hs);
+        n++;
+        const batchId=`${location.substring(0,3).toUpperCase()}-B${n}`;
+        const size=Number(lane.capacity);
+        const trainingEnd=addWorkingDays(startDate,classroomDays,hs);
+        const mockDate=addWorkingDays(trainingEnd,mockDays,hs);
+        const ojtStart=addWorkingDays(mockDate,1,hs);
+        const ojtEnd=addWorkingDays(ojtStart,ojtDays,hs);
+        const resultDate=addWorkingDays(ojtEnd,resultDays,hs);
+        const goLive=addWorkingDays(resultDate,1,hs);
+        const release=smeEnabled? addWorkingDays(startDate,classroomDays+mockDays,hs)
+                                : addWorkingDays(startDate,classroomDays+mockDays+ojtDays,hs);
+        avail[i]=new Date(release.getTime());
+        rows.push({
+          "Location":location,"Batch ID":batchId,"Trainer":`Trainer-${i+1}`,"Training Room":lane.room_name,
+          "Shift":lane.shift,"Batch Size":size,"Start Date":fmtDate(startDate),"Training End Date":fmtDate(trainingEnd),
+          "Mock Certification Date":fmtDate(mockDate),"OJT Start Date":fmtDate(ojtStart),"OJT End Date":fmtDate(ojtEnd),
+          "Result Date":fmtDate(resultDate),"Go Live Date":fmtDate(goLive),"Trainer Release Date":fmtDate(release),
+          "SME Enabled":smeEnabled?"Yes":"No","SME Ratio":site.sme_ratio||""
+        });
+        planned+=size;
+      }
+    }
+  }
+  return rows;
+}
+
+/* ================= GANTT WORKBOOK BUILDER (ExcelJS) ================= */
+const C={ink:'0F172A',sub:'E2E8F0',subTx:'334155',card:'F8FAFC',hdr:'0B3B66',
+  dayHdr:'EFF6FF',dayHdrWk:'E0E7FF',dayTx:'1E3A8A',
+  train:'60A5FA',ojt:'34D399',go:'F59E0B',cellWk:'F8FAFC',cellWe:'F1F5F9',white:'FFFFFF',line:'E2E8F0'};
+const sfill=h=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+h}});
+const dUTC=s=>{const[y,m,dd]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd));};
+const fmtU=dt=>`${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;
+const DOW=['S','M','T','W','T','F','S'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const thinB={style:'thin',color:{argb:'FFE2E8F0'}};
+const allBorders=()=>({top:thinB,bottom:thinB,left:thinB,right:thinB});
+
+function buildWorkbook(payload){
+  const rows=runPlanner(payload);
+  const wb=new ExcelJS.Workbook();
+  wb.creator='Training Ramp Planner';
+
+  const cols=["Location","Batch ID","Trainer","Training Room","Shift","Batch Size","Start Date","Training End Date","Mock Certification Date","OJT Start Date","OJT End Date","Result Date","Go Live Date","Trainer Release Date","SME Enabled","SME Ratio"];
+  const s1=wb.addWorksheet('Sheet1');
+  const hr=s1.addRow(cols); hr.font={bold:true,color:{argb:'FFFFFFFF'}}; hr.eachCell(c=>{c.fill=sfill(C.hdr);c.alignment={horizontal:'center'};});
+  rows.forEach(r=>s1.addRow(cols.map(c=>r[c])));
+  s1.columns.forEach(c=>c.width=15);
+  s1.views=[{state:'frozen',ySplit:1}];
+
+  if(rows.length){
+    const ws=wb.addWorksheet('Beautiful_Gantt',{views:[{state:'frozen',xSplit:7,ySplit:9}]});
+    let min=rows[0]["Start Date"],max=rows[0]["Go Live Date"];
+    rows.forEach(r=>{if(r["Start Date"]<min)min=r["Start Date"];if(r["Go Live Date"]>max)max=r["Go Live Date"];});
+    const start=dUTC(min),end=dUTC(max);
+    const days=[]; for(let d=new Date(start.getTime());d<=end;d.setUTCDate(d.getUTCDate()+1))days.push(new Date(d.getTime()));
+    const LAB=7, first=LAB+1, total=LAB+days.length;
+
+    ws.mergeCells(1,1,1,total);
+    let t=ws.getCell(1,1); t.value='Training Ramp Planner | Executive Gantt'; t.fill=sfill(C.ink); t.font={name:'Arial',bold:true,color:{argb:'FFFFFFFF'},size:18}; t.alignment={vertical:'middle'};
+    ws.getRow(1).height=28;
+    ws.mergeCells(2,1,2,total);
+    t=ws.getCell(2,1); t.value=`Batch execution view from ${start.getUTCDate()} ${MON[start.getUTCMonth()]} ${start.getUTCFullYear()} to ${end.getUTCDate()} ${MON[end.getUTCMonth()]} ${end.getUTCFullYear()}`; t.fill=sfill(C.sub); t.font={name:'Arial',color:{argb:'FF'+C.subTx}}; t.alignment={vertical:'middle'};
+    ws.getRow(2).height=18;
+
+    const seats=rows.reduce((a,r)=>a+Number(r["Batch Size"]||0),0);
+    const locs=new Set(rows.map(r=>r.Location)).size;
+    const kpis=[['Total Batches',rows.length],['Locations',locs],['Date Span (days)',days.length],['Planned Seats',seats]];
+    kpis.forEach((k,i)=>{
+      const c1=1+i*2;
+      ws.mergeCells(4,c1,4,c1+1); ws.mergeCells(5,c1,5,c1+1);
+      const lab=ws.getCell(4,c1); lab.value=k[0]; lab.fill=sfill(C.card); lab.font={name:'Arial',bold:true,size:9,color:{argb:'FF'+C.subTx}}; lab.alignment={horizontal:'center'}; lab.border=allBorders();
+      const v=ws.getCell(5,c1); v.value=k[1]; v.fill=sfill(C.card); v.font={name:'Arial',bold:true,size:18,color:{argb:'FF'+C.ink}}; v.alignment={horizontal:'center'}; v.border=allBorders();
+      ws.getCell(4,c1+1).border=allBorders(); ws.getCell(5,c1+1).border=allBorders();
+    });
+    ws.getCell(4,10).value='Legend'; ws.getCell(4,10).font={name:'Arial',bold:true,size:9,color:{argb:'FF'+C.subTx}};
+    [['Training',C.train],['OJT',C.ojt],['Go-live',C.go]].forEach((l,i)=>{const c=ws.getCell(5,10+i); c.value=l[0]; c.fill=sfill(l[1]); c.font={name:'Arial',bold:true,size:9,color:{argb:'FFFFFFFF'}}; c.alignment={horizontal:'center'};});
+    ws.getRow(4).height=14; ws.getRow(5).height=22;
+
+    ['Batch ID','Location','Trainer','Room','Size','Start','End'].forEach((h,i)=>{
+      const c=ws.getCell(7,i+1); c.value=h; c.fill=sfill(C.hdr); c.font={name:'Arial',bold:true,size:9,color:{argb:'FFFFFFFF'}}; c.alignment={horizontal:'center',vertical:'middle'};
+    });
+    let i=0;
+    while(i<days.length){
+      const m=days[i].getUTCMonth(),y=days[i].getUTCFullYear(); let j=i;
+      while(j<days.length && days[j].getUTCMonth()===m && days[j].getUTCFullYear()===y) j++;
+      const c1=first+i,c2=first+j-1;
+      if(c2>c1) ws.mergeCells(7,c1,7,c2);
+      const c=ws.getCell(7,c1); c.value=`${MON[m]} ${y}`; c.fill=sfill(C.hdr); c.font={name:'Arial',bold:true,size:9,color:{argb:'FFFFFFFF'}}; c.alignment={horizontal:'center'};
+      i=j;
+    }
+    days.forEach((d,k)=>{
+      const we=d.getUTCDay()===0||d.getUTCDay()===6;
+      const n=ws.getCell(8,first+k); n.value=d.getUTCDate(); n.fill=sfill(we?C.dayHdrWk:C.dayHdr); n.font={name:'Arial',bold:true,size:8,color:{argb:'FF'+C.dayTx}}; n.alignment={horizontal:'center'};
+      const w=ws.getCell(9,first+k); w.value=DOW[d.getUTCDay()]; w.fill=sfill(we?C.dayHdrWk:C.dayHdr); w.font={name:'Arial',size:7,color:{argb:'FF'+C.dayTx}}; w.alignment={horizontal:'center'};
+    });
+    ws.getRow(8).height=13; ws.getRow(9).height=12;
+
+    rows.forEach((r,ri)=>{
+      const R=10+ri;
+      const meta=[r["Batch ID"],r.Location,r.Trainer,r["Training Room"],r["Batch Size"],r["Start Date"],r["Go Live Date"]];
+      meta.forEach((v,ci)=>{const c=ws.getCell(R,ci+1); c.value=v; c.fill=sfill(C.white); c.font={name:'Arial',size:9,color:{argb:'FF'+C.ink}}; c.alignment={horizontal:ci<1?'left':'center'}; c.border=allBorders();});
+      const sD=dUTC(r["Start Date"]),teD=dUTC(r["Training End Date"]),ojsD=dUTC(r["OJT Start Date"]),ojeD=dUTC(r["OJT End Date"]),glD=dUTC(r["Go Live Date"]);
+      days.forEach((d,k)=>{
+        const c=ws.getCell(R,first+k); const ds=fmtU(d); const we=d.getUTCDay()===0||d.getUTCDay()===6;
+        if(ds===fmtU(glD)){ c.value='◆'; c.fill=sfill(C.go); c.font={name:'Arial',bold:true,size:10,color:{argb:'FFFFFFFF'}}; c.alignment={horizontal:'center'}; }
+        else if(d>=sD&&d<=teD){ c.fill=sfill(C.train); }
+        else if(d>=ojsD&&d<=ojeD){ c.fill=sfill(C.ojt); }
+        else { c.fill=sfill(we?C.cellWe:C.cellWk); }
+      });
+    });
+
+    [12,11,11,14,6,11,11].forEach((w,k)=>ws.getColumn(k+1).width=w);
+    for(let k=0;k<days.length;k++) ws.getColumn(first+k).width=2.8;
+  }
+  return {wb,rows};
+}
+
+/* ---------------- Review preview ---------------- */
+function refreshReview(){
+  const payload=buildPayload();
+  let rows=[];
+  try{ rows=runPlanner(payload); }catch(e){ rows=[]; }
+  const seats=rows.reduce((a,r)=>a+Number(r["Batch Size"]||0),0);
+  const locs=new Set(rows.map(r=>r.Location)).size;
+  let span=0;
+  if(rows.length){
+    let min=rows[0]["Start Date"],max=rows[0]["Go Live Date"];
+    rows.forEach(r=>{if(r["Start Date"]<min)min=r["Start Date"];if(r["Go Live Date"]>max)max=r["Go Live Date"];});
+    span=Math.round((dUTC(max)-dUTC(min))/86400000)+1;
+  }
+  const stats=[['Total Batches',rows.length],['Locations',locs],['Date Span (days)',span],['Planned Seats',seats]];
+  document.getElementById('reviewStats').innerHTML = stats.map(s=>`<div class="rstat"><div class="v">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+  document.getElementById('barSub').textContent = rows.length? `${rows.length} batches across ${locs} location(s) ready to export.` : 'Add a location with rooms and an intake date to begin.';
+
+  // mini preview table (first 12 rows)
+  const wrap=document.getElementById('previewWrap'), tbl=document.getElementById('previewTbl');
+  if(rows.length){
+    const cols=["Batch ID","Location","Trainer","Training Room","Batch Size","Start Date","Go Live Date","SME Enabled"];
+    tbl.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`+
+      `<tbody>${rows.slice(0,12).map(r=>`<tr>${cols.map(c=>`<td>${r[c]}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    wrap.style.display='block';
+  } else { wrap.style.display='none'; }
+  return rows;
+}
+
+/* ---------------- Generate + download ---------------- */
+async function generate(){
+  const btn=document.getElementById('genBtn');
+  const res=document.getElementById('result'), ico=document.getElementById('resultIco'),
+        title=document.getElementById('resultTitle'), sub=document.getElementById('resultSub');
+  res.style.display='flex';
+  function setState(tone,t,s,icon){
+    title.textContent=t; sub.textContent=s;
+    const bg={work:'var(--blue)',ok:'var(--green)',err:'var(--red)'}[tone];
+    ico.style.background=bg; ico.innerHTML=icon;
+  }
+  if(typeof ExcelJS==='undefined'){
+    setState('err','Excel engine not loaded','Check your internet connection and reload — the file builder loads from a CDN.','!');
+    return;
+  }
+  const payload=buildPayload();
+  const rows=refreshReview();
+  if(!rows.length){
+    setState('err','Nothing to build yet','Add at least one location with a room (capacity > 0) and an intake date.','!');
+    goStep('siteSetup'); return;
+  }
+  try{
+    btn.disabled=true;
+    setState('work','Building workbook…','Computing batches and painting the Gantt.','<div class="spin"></div>');
+    const {wb}=buildWorkbook(payload);
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const name=`Ramp_Planner_${(payload.global.process_name||'Plan').replace(/[^\w]+/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    setState('ok','Workbook downloaded','<span style="color:var(--slate)">'+name+'</span> — Sheet1 has the raw plan, Beautiful_Gantt has the timeline.','✓');
+  }catch(e){
+    setState('err','Generation failed', e.message||'Unexpected error', '!');
+  }finally{ btn.disabled=false; }
+}
+
+/* ---------------- Seed demo data (reproduces the reference Gantt) ---------------- */
+function seed(){
+  document.getElementById('processName').value='Myntra';
+  document.getElementById('planningMonth').value='June 2026';
+
+  const setSite=(b,d)=>{
+    b.querySelector('.site-name').value=d.name;
+    b.querySelector('.ramp-target').value=d.target;
+    b.querySelector('.trainers').value=2;
+    b.querySelector('.room-count').value=2;
+    b.querySelector('.first-onboard').value=d.first;
+    b.querySelector('.shift-mode').value='Morning Only';
+    const sme=b.querySelector('.sme-enabled'); sme.checked=true; toggleSme(sme); b.querySelector('.sme-ratio').value='10:1';
+    const r1=b.querySelectorAll('.room-body tr')[0];
+    r1.children[0].querySelector('input').value=d.r1; r1.children[1].querySelector('input').value=d.c1; r1.children[2].querySelector('select').value='Morning Only';
+    addRoomRow(b.querySelector('.sub-label').parentElement.querySelector('button'));
+    const r2=b.querySelectorAll('.room-body tr')[1];
+    r2.children[0].querySelector('input').value=d.r2; r2.children[1].querySelector('input').value=d.c2; r2.children[2].querySelector('select').value='Morning Only';
+  };
+  setSite(addSite(),{name:'Pune',target:100,first:'2026-04-29',r1:'Pune Room 1',c1:20,r2:'Pune Room 2',c2:22});
+  setSite(addSite(),{name:'Bangalore',target:140,first:'2026-04-30',r1:'BLR Room 1',c1:20,r2:'BLR Room 2',c2:25});
+
+  syncLocations();
+  addRow('recruitmentBody', recruitmentRow());
+  addRow('recruitmentBody', recruitmentRow());
+  const intakes=document.querySelectorAll('#recruitmentBody tr');
+  intakes[0].children[0].querySelector('select').value='Pune';
+  intakes[0].children[1].querySelector('input').value='2026-04-29';
+  intakes[0].children[2].querySelector('input').value='20';
+  intakes[1].children[0].querySelector('select').value='Bangalore';
+  intakes[1].children[1].querySelector('input').value='2026-04-30';
+  intakes[1].children[2].querySelector('input').value='20';
+
+  refreshKPIs();
+}
+seed();
+</script>
+</body>
+</html>

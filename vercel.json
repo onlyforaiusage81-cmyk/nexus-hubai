@@ -4,6 +4,12 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/login", "destination": "/login.html" },
-    { "source": "/portal", "destination": "/api/portal" }
-  ]
+    { "source": "/portal", "destination": "/api/portal" },
+    { "source": "/tools/roadmap-creator", "destination": "/api/tools/roadmap-creator" },
+    { "source": "/tools/ramp-up-planner", "destination": "/api/tools/rampup-planner" }
+  ],
+  "functions": {
+    "api/tools/roadmap-creator.js": { "includeFiles": "api/_tools/roadmap-creator.html" },
+    "api/tools/rampup-planner.js": { "includeFiles": "api/_tools/rampup-planner.html" }
+  }
 }

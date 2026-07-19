@@ -19,14 +19,14 @@ const TOOLS = [
   {
     name: 'Roadmap Creator',
     desc: 'Turns operational inputs into a ranked, presentation-ready roadmap.',
-    href: null,
-    live: false,
+    href: '/tools/roadmap-creator',
+    live: true,
   },
   {
     name: 'Ramp-up Planner',
     desc: 'Builds a structured ramp plan for new hires from your training inputs.',
-    href: null,
-    live: false,
+    href: '/tools/ramp-up-planner',
+    live: true,
   },
 ];
 

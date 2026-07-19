@@ -96,6 +96,18 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(content);
     }
+    if (pathname === '/tools/roadmap-creator') {
+      delete require.cache[require.resolve('../api/tools/roadmap-creator.js')];
+      delete require.cache[require.resolve('../api/_lib/auth.js')];
+      const handler = require('../api/tools/roadmap-creator.js');
+      return handler(req, res);
+    }
+    if (pathname === '/tools/ramp-up-planner') {
+      delete require.cache[require.resolve('../api/tools/rampup-planner.js')];
+      delete require.cache[require.resolve('../api/_lib/auth.js')];
+      const handler = require('../api/tools/rampup-planner.js');
+      return handler(req, res);
+    }
 
     // Real Vercel deployments never serve /api/** as static files (that whole
     // tree is reserved for Serverless Functions) — match that here so local
