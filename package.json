@@ -1,0 +1,12 @@
+{
+  "name": "nexus-hub-site",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vercel dev",
+    "dev:local": "node scripts/dev-server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  }
+}
