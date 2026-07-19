@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 
 const COOKIE_NAME = 'nh_session';
+const ADMIN_COOKIE_NAME = 'nh_admin_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 function getSecret() {
@@ -13,8 +14,10 @@ function sign(encodedPayload) {
   return crypto.createHmac('sha256', getSecret()).update(encodedPayload).digest('base64url');
 }
 
-function createSessionToken(name) {
-  const payload = JSON.stringify({ name, exp: Date.now() + SESSION_TTL_MS });
+// role defaults to 'buyer' so existing tokens minted before roles existed
+// (payload had no `role` field) keep verifying the same way.
+function createSessionToken(name, role) {
+  const payload = JSON.stringify({ name, role: role || 'buyer', exp: Date.now() + SESSION_TTL_MS });
   const encodedPayload = Buffer.from(payload, 'utf8').toString('base64url');
   const signature = sign(encodedPayload);
   return `${encodedPayload}.${signature}`;
@@ -40,7 +43,7 @@ function verifySessionToken(token) {
   }
   if (!payload || typeof payload.name !== 'string' || typeof payload.exp !== 'number') return null;
   if (Date.now() > payload.exp) return null;
-  return payload;
+  return { name: payload.name, role: payload.role || 'buyer', exp: payload.exp };
 }
 
 function parseCookies(req) {
@@ -61,9 +64,9 @@ function isProd() {
   return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 }
 
-function buildSessionCookie(token) {
+function buildSessionCookie(token, cookieName) {
   const parts = [
-    `${COOKIE_NAME}=${encodeURIComponent(token)}`,
+    `${cookieName || COOKIE_NAME}=${encodeURIComponent(token)}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',
@@ -73,8 +76,8 @@ function buildSessionCookie(token) {
   return parts.join('; ');
 }
 
-function buildClearCookie() {
-  const parts = [`${COOKIE_NAME}=`, 'Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0'];
+function buildClearCookie(cookieName) {
+  const parts = [`${cookieName || COOKIE_NAME}=`, 'Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0'];
   if (isProd()) parts.push('Secure');
   return parts.join('; ');
 }
@@ -84,12 +87,26 @@ function getSessionFromRequest(req) {
   return verifySessionToken(cookies[COOKIE_NAME]);
 }
 
+// Admin sessions live under a separate cookie name (so a buyer and an admin
+// can be logged in simultaneously in the same browser without clobbering
+// each other) and the payload's `role` must explicitly be 'admin' -- a
+// buyer can never gain admin access just by presenting their own validly
+// signed buyer token under the admin cookie name.
+function getAdminSessionFromRequest(req) {
+  const cookies = parseCookies(req);
+  const session = verifySessionToken(cookies[ADMIN_COOKIE_NAME]);
+  if (!session || session.role !== 'admin') return null;
+  return session;
+}
+
 module.exports = {
   COOKIE_NAME,
+  ADMIN_COOKIE_NAME,
   createSessionToken,
   verifySessionToken,
   parseCookies,
   buildSessionCookie,
   buildClearCookie,
   getSessionFromRequest,
+  getAdminSessionFromRequest,
 };

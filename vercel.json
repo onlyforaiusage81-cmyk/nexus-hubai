@@ -8,7 +8,9 @@
     { "source": "/tools/roadmap-creator", "destination": "/api/tools/roadmap-creator" },
     { "source": "/tools/ramp-up-planner", "destination": "/api/tools/rampup-planner" },
     { "source": "/tools/ybr-studio", "destination": "/api/tools/ybr-studio" },
-    { "source": "/tools/ai-quiz-portal", "destination": "/api/tools/ai-quiz-portal" }
+    { "source": "/tools/ai-quiz-portal", "destination": "/api/tools/ai-quiz-portal" },
+    { "source": "/admin", "destination": "/api/admin" },
+    { "source": "/admin-login", "destination": "/admin-login.html" }
   ],
   "functions": {
     "api/tools/roadmap-creator.js": { "includeFiles": "api/_tools/roadmap-creator.html" },

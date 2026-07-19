@@ -96,6 +96,41 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(content);
     }
+    if (pathname === '/admin-login') {
+      const filePath = path.join(ROOT, 'admin-login.html');
+      const content = fs.readFileSync(filePath);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(content);
+    }
+    if (pathname === '/admin') {
+      delete require.cache[require.resolve('../api/admin.js')];
+      delete require.cache[require.resolve('../api/_lib/auth.js')];
+      const handler = require('../api/admin.js');
+      return handler(req, res);
+    }
+    if (pathname === '/api/admin-login') {
+      req.body = await readBody(req);
+      delete require.cache[require.resolve('../api/admin-login.js')];
+      const handler = require('../api/admin-login.js');
+      return handler(req, res);
+    }
+    if (pathname === '/api/admin-logout') {
+      delete require.cache[require.resolve('../api/admin-logout.js')];
+      const handler = require('../api/admin-logout.js');
+      return handler(req, res);
+    }
+    const ADMIN_WRITE_ROUTES = {
+      '/api/admin/create-buyer': '../api/admin/create-buyer.js',
+      '/api/admin/update-products': '../api/admin/update-products.js',
+      '/api/admin/reset-password': '../api/admin/reset-password.js',
+      '/api/admin/delete-buyer': '../api/admin/delete-buyer.js',
+    };
+    if (ADMIN_WRITE_ROUTES[pathname]) {
+      req.body = await readBody(req);
+      delete require.cache[require.resolve(ADMIN_WRITE_ROUTES[pathname])];
+      const handler = require(ADMIN_WRITE_ROUTES[pathname]);
+      return handler(req, res);
+    }
     const TOOL_ROUTES = {
       '/tools/roadmap-creator': '../api/tools/roadmap-creator.js',
       '/tools/ramp-up-planner': '../api/tools/rampup-planner.js',
