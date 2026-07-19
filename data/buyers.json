@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "name": "Demo Buyer",
+    "passwordHash": "$2a$10$Dx.kQPgGn4JVKe7SZa0ga.Nllu0vfVJQY1CdTzzCCzpuZRJyms5fG"
+  }
+]
