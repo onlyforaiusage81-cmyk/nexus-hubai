@@ -8,6 +8,7 @@
     "name": "Limited Buyer",
     "passwordHash": "$2a$10$d7g7ymmHzREW/V5JTZjZ/OiQlmWG3bAHREwWtobbqdzbDx5ZmsIOK",
     "products": [
+      "dsat-scrubber",
       "ybr-studio"
     ]
   },
