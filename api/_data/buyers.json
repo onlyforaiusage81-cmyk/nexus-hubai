@@ -20,5 +20,10 @@
       "roadmap-creator",
       "ramp-up-planner"
     ]
+  },
+  {
+    "name": "Piyan",
+    "passwordHash": "$2a$10$aYXUw2NhW.5UHz2.IgEQy.4pE0L4DkuuO2EUOmFlXDy2lD0IBmXwe",
+    "products": "bundle"
   }
 ]
