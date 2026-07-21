@@ -142,7 +142,7 @@ a.tool-card:hover{background:#1a1b20}
   <div class="tool-grid">${cards}</div>
 </div>
 
-<p class="foot-note">&copy; 2026 Nexus Hub &middot; An AI Operations Platform</p>
+<p class="foot-note">&copy; 2026 Soumyajit Majumder &middot; Nexus Hub</p>
 </body></html>`;
 }
 
